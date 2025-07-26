@@ -40,6 +40,9 @@
     const form = document.getElementById("textForm");
     const status = document.getElementById("status");
 
+    const GIST_ID = "YOUR_GIST_ID";  // Replace with your GitHub Gist ID
+    const GITHUB_TOKEN = "YOUR_GITHUB_PAT";  // Optional if Gist is public
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = document.getElementById("message").value.trim();
@@ -48,18 +51,26 @@
         return;
       }
       try {
-        const response = await fetch("http://192.168.0.13/message", {
-          method: "POST",
+        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+          method: "PATCH",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            ...(GITHUB_TOKEN && { "Authorization": `Bearer ${GITHUB_TOKEN}` })
           },
-          body: JSON.stringify({ message: text })
+          body: JSON.stringify({
+            files: {
+              "epaper-message.txt": {
+                content: text
+              }
+            }
+          })
         });
 
         if (response.ok) {
-          status.textContent = "✅ Message sent to ESP32!";
+          status.textContent = "✅ Message sent to public endpoint!";
         } else {
-          status.textContent = "❌ Failed to send. Check ESP32 connection.";
+          const result = await response.json();
+          status.textContent = `❌ Error: ${result.message || 'Unknown error'}`;
         }
       } catch (error) {
         status.textContent = "❌ Network error: " + error.message;
